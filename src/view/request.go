@@ -40,7 +40,7 @@ type Image struct {
 type NextEpisode struct {
 	Channel			int				`json:"channel,omitempty"`
 	ChannelLogo		string			`json:"channelLogo,omitempty"`
-	Date			JSONTime		`json:"date,omitempty"`
+	Date			int				`json:"date,omitempty"`
 	Html			string			`json:"html,omitempty"`
 	Url				string			`json:"url,omitempty"`
 }
