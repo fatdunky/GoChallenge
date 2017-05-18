@@ -8,7 +8,7 @@ import (
 /*
 * Log the request and Send the request to the main controller 
 */
-func main() {
+func init() {
 	logging.SetLogLevel(logging.TRACE, true)
 	logging.Started("StanChallenge", "init")
     http.HandleFunc("/", logging.LogReceivedThenHandle(controller.MainHandler, "StanChallenge", "init"))
