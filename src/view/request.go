@@ -12,6 +12,23 @@ import (
 *	This package contains the JSON config for incomming requests.
 */
 
+type JSONTime struct {
+    time.Time
+}
+
+const jsonTimeLayout = "1970/01/01|00:00:00"
+
+//This should parse the time JSON objects. The examples were all null, so unsure of the format. 
+func (t JSONTime)MarshalJSON(b []byte) (err error) {
+    s := string(b)
+    if s == "null" || s == "" {
+       t.Time = time.Time{}
+       return
+    }
+    t.Time, err = time.Parse(jsonTimeLayout, s)
+    return
+}
+
 type Season struct {
 	Slug			string			`json:"slug,omitempty"`
 }
@@ -23,7 +40,7 @@ type Image struct {
 type NextEpisode struct {
 	Channel			int				`json:"channel,omitempty"`
 	ChannelLogo		string			`json:"channelLogo,omitempty"`
-	Date			time.Time		`json:"date,omitempty"`
+	Date			JSONTime		`json:"date,omitempty"`
 	Html			string			`json:"html,omitempty"`
 	Url				string			`json:"url,omitempty"`
 }
