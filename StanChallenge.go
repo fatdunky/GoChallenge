@@ -9,7 +9,7 @@ import (
 /*
 * Log the request and Send the request to the main controller 
 */
-func init() {
+func main() {
 	logging.SetLogLevel(logging.TRACE, true)
 	configuration,_ := config.LoadConfig("config/config.json")
 	logging.LogToGCould = configuration.LogToCloud
