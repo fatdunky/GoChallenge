@@ -9,77 +9,111 @@ package logging
 
 import (
 	"fmt"
+    "golang.org/x/net/context"
 )
 
-// Log received messages
-func AccessReceived(format string, a ...interface{}) {
-	logger.Access.Output(2, fmt.Sprintf("Received : %s\n", fmt.Sprintf(format, a...)))
+type logLocalMessage func(format string, a ...interface{})
+type logGCloudMessage func(ctx context.Context, format string, a ...interface{})
+
+func logMessage(ctx context.Context,localMessage logLocalMessage, gCloudMessage logGCloudMessage, format string, a ...interface{}) {
+	message :=  fmt.Sprintf(format,a...)
+	if LogToLocal == true {
+		localMessage(message)
+	}
+	if LogToGCould == true && ctx != nil {
+		gCloudMessage(ctx, message)
+	}
 }
 
+// Log received messages
+func AccessReceived(ctx context.Context, format string, a ...interface{}) {
+	if LogToLocal == true {
+		logger.Access.Output(2, fmt.Sprintf("Received : %s\n", fmt.Sprintf(format, a...)))
+	} 
+	//No need to log access in gcloud as apengine does it allready
+}
 
 //** STARTED AND COMPLETED
 
 // Started uses the Serialize destination and adds a Started tag to the log line
-func Started(title string, functionName string) {
-	logger.Trace.Output(2, fmt.Sprintf("%s : %s : Started\n", title, functionName))
-}
+/*func Started(ctx context.Context, title string, functionName string, functionName string) {
+	message :=  fmt.Sprintf("%s : %s : Started\n", title, functionName)
+	logMessage(ctx, LlogTracef,GlogDebugf ,message)
+}*/
 
 // Startedf uses the Serialize destination and writes a Started tag to the log line
-func Startedf(title string, functionName string, format string, a ...interface{}) {
-	logger.Trace.Output(2, fmt.Sprintf("%s : %s : Started : %s\n", title, functionName, fmt.Sprintf(format, a...)))
+func Startedf(ctx context.Context, title string, functionName string, format string, a ...interface{}) {
+	message :=  fmt.Sprintf("%s : %s : Started : %s\n", title, functionName, fmt.Sprintf(format, a...))
+	logMessage(ctx, LlogTracef,GlogDebugf ,message)
 }
 
 // Completed uses the Serialize destination and writes a Completed tag to the log line
-func Completed(title string, functionName string) {
-	logger.Trace.Output(2, fmt.Sprintf("%s : %s : Completed\n", title, functionName))
+func Completed(ctx context.Context, title string, functionName string) {
+	message :=  fmt.Sprintf("%s : %s : Completed\n", title, functionName)
+	logMessage(ctx, LlogTracef,GlogDebugf ,message)
 }
 
 // Completedf uses the Serialize destination and writes a Completed tag to the log line
-func Completedf(title string, functionName string, format string, a ...interface{}) {
-	logger.Trace.Output(2, fmt.Sprintf("%s : %s : Completed : %s\n", title, functionName, fmt.Sprintf(format, a...)))
+func Completedf(ctx context.Context, title string, functionName string, format string, a ...interface{}) {
+	message :=  fmt.Sprintf("%s : %s : Completed : %s\n", title, functionName, fmt.Sprintf(format, a...))
+	logMessage(ctx, LlogTracef,GlogDebugf ,message)
 }
 
 // CompletedError uses the Error destination and writes a Completed tag to the log line
-func CompletedError(err error, title string, functionName string) {
-	logger.Error.Output(2, fmt.Sprintf("%s : %s : Completed : ERROR : %s\n", title, functionName, err))
+func CompletedError(ctx context.Context, err error, title string, functionName string) {
+	message :=  fmt.Sprintf("%s : %s : Completed : ERROR : %s\n", title, functionName, err)
+	logMessage(ctx, LlogErrorf,GlogErrorf ,message)
+	
 }
 
 // CompletedErrorf uses the Error destination and writes a Completed tag to the log line
-func CompletedErrorf(err error, title string, functionName string, format string, a ...interface{}) {
-	logger.Error.Output(2, fmt.Sprintf("%s : %s : Completed : ERROR : %s : %s\n", title, functionName, fmt.Sprintf(format, a...), err))
+func CompletedErrorf(ctx context.Context, err error, title string, functionName string, format string, a ...interface{}) {
+	message := fmt.Sprintf("%s : %s : Completed : ERROR : %s : %s\n", title, functionName, fmt.Sprintf(format, a...), err)
+	logMessage(ctx, LlogErrorf,GlogErrorf ,message)
 }
 
 //** TRACE
 
 // Trace writes to the Trace destination
-func Trace(format string, a ...interface{}) {
-	logger.Trace.Output(2, fmt.Sprintf("Trace : %s\n", fmt.Sprintf(format, a...)))
+func Trace(ctx context.Context, format string, a ...interface{}) {
+	message := fmt.Sprintf("Trace : %s\n", fmt.Sprintf(format, a...))
+	logMessage(ctx, LlogTracef,GlogDebugf ,message)
 }
 
 //** INFO
 
 // Info writes to the Info destination
-func Info(format string, a ...interface{}) {
-	logger.Info.Output(2, fmt.Sprintf("Info : %s\n", fmt.Sprintf(format, a...)))
+func Info(ctx context.Context, format string, a ...interface{}) {
+	message := fmt.Sprintf("Info : %s\n", fmt.Sprintf(format, a...))
+	logMessage(ctx, LlogInfof,GlogInfof ,message)
 }
 
 //** WARNING
 
 // Warning writes to the Warning destination
-func Warning(format string, a ...interface{}) {
-	logger.Warning.Output(2, fmt.Sprintf("Info : %s\n", fmt.Sprintf(format, a...)))
+func Warning(ctx context.Context, format string, a ...interface{}) {
+	message := fmt.Sprintf("Info : %s\n", fmt.Sprintf(format, a...))
+	logMessage(ctx, LlogWarningf,GlogWarningf ,message)
 }
 
 //** ERROR
 
 // Error writes to the Error destination and accepts an err
-func Error(err error) {
-	logger.Error.Output(2, fmt.Sprintf("ERROR : %s\n", err))
+func Error(ctx context.Context, err error) {
+	message := fmt.Sprintf("ERROR : %s\n", err)
+	logMessage(ctx, LlogErrorf,GlogErrorf ,message)
 }
 
 // Errorf writes to the Error destination and accepts an err
-func Errorf(err error, format string, a ...interface{}) {
-	logger.Error.Output(2, fmt.Sprintf("ERROR : %s : %s\n", fmt.Sprintf(format, a...), err))
+func Errorf(ctx context.Context, err error, format string, a ...interface{}) {
+	message := fmt.Sprintf("ERROR : %s : %s\n", fmt.Sprintf(format, a...), err)
+	logMessage(ctx, LlogErrorf,GlogErrorf ,message)
+}
+
+// Criticalf writes to the Error destination and accepts an err
+func Criticalf(ctx context.Context, format string, a ...interface{}) {
+	message := fmt.Sprintf("CRITICAL : %s : %s\n", fmt.Sprintf(format, a...))
+	logMessage(ctx, LlogCriticalf,GlogCriticalf ,message)
 }
 
 

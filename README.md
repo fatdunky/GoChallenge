@@ -10,6 +10,8 @@ image - corresponding to image/showImage from the request payload
 slug
 title
 
+Main URL:https://1-dot-stan-challenge.appspot.com/
+
 Repo: https://github.com/fatdunky/GoChallenge
 
 Project Structure:

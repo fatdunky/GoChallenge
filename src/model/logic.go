@@ -4,6 +4,7 @@ import (
     "utilities/logging"
     "view"
     "errors"
+    "golang.org/x/net/context"
 )
 
 /*
@@ -11,7 +12,7 @@ import (
 *				returned on a matched show, not sure if this is the correct behaviour. 
 */
 
-func ProcessShows(req view.Request)(view.Response,error) {
+func ProcessShows(ctx context.Context,req view.Request)(view.Response,error) {
 	/*
 	From the list of shows in the request payload, return the ones with DRM enabled (drm: true) 
 	and at least one episode (episodeCount > 0)
@@ -25,24 +26,24 @@ func ProcessShows(req view.Request)(view.Response,error) {
 	*/
 	retVal := view.Response{}
 	for _, playload := range req.Payloads {
-		logging.Started("logic", "processShows")
+		logging.Startedf(ctx,"logic", "processShows","")
 		title := playload.Title
 		slug := playload.Slug
 		drm := playload.Drm
 		epCount := playload.EpisodeCount
 		image := playload.ImageObj.ShowImage
 		
-		logging.Trace("Title:%s, drm:%s. episodeCount:%s",title,drm,epCount)
+		logging.Trace(ctx,"Title:%s, drm:%s, episodeCount:%s",title,drm,epCount)
 		if (drm == true && epCount > 0 ) {
 			if title == "" ||  slug == "" || image == "" {
 				err := errors.New("Show does not contain enough information to return")
-				logging.CompletedErrorf(err,"logic", "processShows","title(%s), slug(%s), image(%s)",title,slug,image)
+				logging.CompletedErrorf(ctx,err,"logic", "processShows", "title(%s), slug(%s), image(%s)",title,slug,image)
 				return retVal, err
 			}
-			logging.Info("Adding playload to response, title(%s), slug(%s), image(%s)",title,slug,image)
-			retVal = view.AddShowToReponse(retVal,title,slug,image)
+			logging.Info(ctx,"Adding playload to response, title(%s), slug(%s), image(%s)",title,slug,image)
+			retVal = view.AddShowToReponse(ctx,retVal,image, slug, title)
 		}
 	}
-	logging.Completed("logic", "processShows")
+	logging.Completed(ctx,"logic", "processShows")
 	return retVal,nil
 }

@@ -11,7 +11,7 @@ func LogReceivedThenHandle(f http.HandlerFunc, title string,function string) htt
 		start := time.Now()
 		f(w, r)
 		end := time.Now()
-		AccessReceived("[%s] %q %v", r.Method, r.URL.String(), end.Sub(start))
+		AccessReceived(nil, "[%s] %q %v", r.Method, r.URL.String(), end.Sub(start))
 		
 	}
 }

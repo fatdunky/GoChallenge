@@ -1,43 +1,222 @@
 package tests
 
 import (
-    "testing"
+	"testing"
+	"fmt"
+	"io/ioutil"
+	"net/http/httptest"
+	"controller"
+	"strings"
+	"encoding/json"
+	"view"
 )
 
-/*
-* Unfortunely i ran out of time and was not able to complete the unit testing models.
-* The logging function caused a panic for the unit test (did not do this in real curl tests)
-*
-* If you know the cause i would be happy for help: fatdunky@gmail.com
-*
-* --- FAIL: TestProcessShows (0.00s)
-panic: runtime error: invalid memory address or nil pointer dereference [recovered]
-        panic: runtime error: invalid memory address or nil pointer dereference
-[signal 0xc0000005 code=0x0 addr=0x0 pc=0x5c9fcb]
 
-goroutine 18 [running]:
-testing.tRunner.func1(0xc042042dd0)
-        C:/Go/src/testing/testing.go:622 +0x2a4
-panic(0x667b20, 0x7e5600)
-        C:/Go/src/runtime/panic.go:489 +0x2dd
-log.(*Logger).Output(0x0, 0x2, 0xc0420d7220, 0x1f, 0x0, 0x0)
-        C:/Go/src/log/log.go:149 +0x5b
-utilities/logging.Started(0x6b2ca3, 0x5, 0x6b4b93, 0xc)
-        c:/Users/mcrick/workspace/StanChallenge/src/utilities/logging/loggingFuncs.go:24 +0x141
-model.ProcessShows(0xc04201fe90, 0x1, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...)
-        c:/Users/mcrick/workspace/StanChallenge/src/model/logic.go:28 +0x117
-_/c_/Users/mcrick/workspace/StanChallenge/test.TestProcessShows(0xc042042dd0)
-        c:/Users/mcrick/workspace/StanChallenge/test/logic_test.go:16 +0x14f
-testing.tRunner(0xc042042dd0, 0x6c3638)
-        C:/Go/src/testing/testing.go:657 +0x9d
-created by testing.(*T).Run
-        C:/Go/src/testing/testing.go:697 +0x2d1
-FAIL    _/c_/Users/mcrick/workspace/StanChallenge/test  0.382s
-*
-*
-*/
 
-func TestXYZ(t *testing.T) {
+func TestEmptyRequest(t *testing.T) {
+	
+	reqBody := strings.NewReader("{}")
+	req := httptest.NewRequest("GET", "/", reqBody)
+	w := httptest.NewRecorder()
+	controller.MainHandler(w, req)
 
+	resp := w.Result()
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+
+	//Empty request (in JSON format) should be okay. 
+	if resp.StatusCode != 200 {
+		 t.Error("Empty Request: Expected status code of 200 got:",resp.StatusCode)
+	}
+	if resp.Header.Get("Content-Type") != "application/json" {
+		  t.Error("Empty Request: Expected Content-Type of 'application/json' got:",resp.Header.Get("Content-Type"))
+	}
+	var resStruct view.ErrorResponse
+	
+	err := json.NewDecoder(resp.Body).Decode(&resStruct); 
+
+	if err == nil {
+		 t.Error("Empty Request: returned error", err)
+	}
+	if resStruct.ErrorMessage != "" {
+		 t.Error("Empty Request: errorResponse is not null")
+	}
 }
 
+func TestMinimumRequest(t *testing.T) {
+	
+	reqBody := strings.NewReader("{ \"payload\": [{ \"title\": \"Test Show\", \"drm\": true, \"episodeCount\": 3, \"slug\": \"show/test\", \"image\" : {\"showImage\":\"http://testImage\"}}]}")
+	req := httptest.NewRequest("GET", "/", reqBody)
+	w := httptest.NewRecorder()
+	controller.MainHandler(w, req)
+
+	resp := w.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
+	//fmt.Println(string(body))
+
+	//Empty request (in JSON format) should be okay. 
+	if resp.StatusCode != 200 {
+		 t.Error("Miniumum Request: Expected status code of 200 got:",resp.StatusCode)
+	}
+	if resp.Header.Get("Content-Type") != "application/json" {
+		  t.Error("Miniumum Request: Expected Content-Type of 'application/json' got:",resp.Header.Get("Content-Type"))
+	}
+	var resStruct view.Response
+	
+	err := json.NewDecoder(resp.Body).Decode(&resStruct); 
+	if err != nil {
+		 t.Error("Miniumum Request: returned error", err)
+	}
+	
+	if len(resStruct.Shows) != 1 {
+		t.Error("Miniumum Request:, test returned result. Expect 1 shows returned got", len(resStruct.Shows))
+	}
+	
+	for _, show := range resStruct.Shows {
+		if show.Title == "" {
+			 t.Error("Miniumum Request: title is not null")
+		}
+		if show.Slug == "" {
+			 t.Error("Miniumum Request: slug is not null")
+		}
+		if show.Image == "" {
+			 t.Error("Miniumum Request: Image is not null")
+		}
+	} 
+	
+}
+
+func TestBadStringRequest(t *testing.T) {
+	
+	reqBody := strings.NewReader("{ \"payload\": [{ \"title\": \"Test Show\", \"drm\": true, \"episodeCount\": 3, \"genre\": genre ,\"slug\": \"show/test\", \"image\" : {\"showImage\":\"http://testImage\"}}]}")
+	req := httptest.NewRequest("GET", "/", reqBody)
+	w := httptest.NewRecorder()
+	controller.MainHandler(w, req)
+
+	resp := w.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
+	//fmt.Println(string(body))
+
+	//Empty request (in JSON format) should be okay. 
+	if resp.StatusCode != 400 {
+		 t.Error("Bad String Request: Expected status code of 400 got:",resp.StatusCode)
+	}
+	if resp.Header.Get("Content-Type") != "application/json" {
+		  t.Error("Bad String Request: Expected Content-Type of 'application/json' got:",resp.Header.Get("Content-Type"))
+	}
+	var resStruct view.ErrorResponse
+	
+	err := json.NewDecoder(resp.Body).Decode(&resStruct); 
+	if err != nil {
+		 t.Error("Bad String Request: returned error", err)
+	}
+	
+	if resStruct.ErrorMessage == "" {
+		t.Error("Bad String Request: ErrorMessage == nil. ", resStruct)
+	}
+	
+}
+
+func TestBadBooleanRequest(t *testing.T) {
+	
+	reqBody := strings.NewReader("{ \"payload\": [{ \"title\": \"Test Show\", \"drm\": incorrect, \"episodeCount\": 3,\"slug\": \"show/test\", \"image\" : {\"showImage\":\"http://testImage\"}}]}")
+	req := httptest.NewRequest("GET", "/", reqBody)
+	w := httptest.NewRecorder()
+	controller.MainHandler(w, req)
+
+	resp := w.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
+	//fmt.Println(string(body))
+
+	//Empty request (in JSON format) should be okay. 
+	if resp.StatusCode != 400 {
+		 t.Error("Bad Boolean Request: Expected status code of 400 got:",resp.StatusCode)
+	}
+	if resp.Header.Get("Content-Type") != "application/json" {
+		  t.Error("Bad Boolean Request: Expected Content-Type of 'application/json' got:",resp.Header.Get("Content-Type"))
+	}
+	var resStruct view.ErrorResponse
+	
+	err := json.NewDecoder(resp.Body).Decode(&resStruct); 
+	if err != nil {
+		 t.Error("Bad Boolean Request: returned error", err)
+	}
+	
+	if resStruct.ErrorMessage == "" {
+		t.Error("Bad Boolean Request: ErrorMessage == nil. ", resStruct)
+	}
+	
+}
+func TestBadIntegerRequest(t *testing.T) {
+	
+	reqBody := strings.NewReader("{ \"payload\": [{ \"title\": \"Test Show\", \"drm\": true, \"episodeCount\": \"incorrect\",\"slug\": \"show/test\", \"image\" : {\"showImage\":\"http://testImage\"}}]}")
+	req := httptest.NewRequest("GET", "/", reqBody)
+	w := httptest.NewRecorder()
+	controller.MainHandler(w, req)
+
+	resp := w.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
+	//fmt.Println(string(body))
+
+	//Empty request (in JSON format) should be okay. 
+	if resp.StatusCode != 400 {
+		 t.Error("Bad Integer Request: Expected status code of 400 got:",resp.StatusCode)
+	}
+	if resp.Header.Get("Content-Type") != "application/json" {
+		  t.Error("Bad Integer Request: Expected Content-Type of 'application/json' got:",resp.Header.Get("Content-Type"))
+	}
+	var resStruct view.ErrorResponse
+	
+	err := json.NewDecoder(resp.Body).Decode(&resStruct); 
+	if err != nil {
+		 t.Error("Bad Integer Request: returned error", err)
+	}
+	
+	if resStruct.ErrorMessage == "" {
+		t.Error("Bad Integer Request: ErrorMessage == nil. ", resStruct)
+	}
+	
+}
+
+func TestFullRequest(t *testing.T) {
+	
+	reqBody := strings.NewReader("{ \"payload\": [{ \"country\":\"TEST\", \"drm\": true, \"episodeCount\": 3, \"genre\": \"Comedy\",\"image\": { \"showImage\" : \"testShowImage\"},\"language\":\"English\", \"nextEpisode\" : {\"channel\" : 1, \"channelLogo\" : \"testChannelLogo\", \"date\" : \"2017-05-25T18:25:43.511Z\", \"html\":\"Test Test\", \"url\" : \"http://test\"}, \"primaryColour\":\"#test\", \"seasons\" : [{\"slug\":\"test/test\"}],\"title\": \"Test Show\", \"slug\": \"show/test\", \"tvChannel\": \"GO!\"}]}")
+	req := httptest.NewRequest("GET", "/", reqBody)
+	w := httptest.NewRecorder()
+	controller.MainHandler(w, req)
+
+	resp := w.Result()
+	//body, _ := ioutil.ReadAll(resp.Body)
+	//fmt.Println(string(body))
+
+	//Empty request (in JSON format) should be okay. 
+	if resp.StatusCode != 200 {
+		 t.Error("Full Request: Expected status code of 200 got:",resp.StatusCode)
+	}
+	if resp.Header.Get("Content-Type") != "application/json" {
+		  t.Error("Full Request: Expected Content-Type of 'application/json' got:",resp.Header.Get("Content-Type"))
+	}
+	var resStruct view.Response
+	
+	err := json.NewDecoder(resp.Body).Decode(&resStruct); 
+	if err != nil {
+		 t.Error("Full Request: returned error", err)
+	}
+	
+	if len(resStruct.Shows) != 1 {
+		t.Error("Full Request:, test returned result. Expect 1 shows returned got", len(resStruct.Shows))
+	}
+	
+	for _, show := range resStruct.Shows {
+		if show.Title == "" {
+			 t.Error("Full Request: title is not null")
+		}
+		if show.Slug == "" {
+			 t.Error("Full Request: slug is not null")
+		}
+		if show.Image == "" {
+			 t.Error("Full Request: Image is not null")
+		}
+	} 
+	
+}

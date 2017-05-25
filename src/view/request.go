@@ -5,6 +5,7 @@ import (
     "utilities/logging"
     "encoding/json"
     "time"
+    "golang.org/x/net/context"
 )
 
 
@@ -16,16 +17,20 @@ type JSONTime struct {
     time.Time
 }
 
-const jsonTimeLayout = "1970/01/01|00:00:00"
+const jsonTimeLayout = "2006-01-02T15:04:05Z"
+
+var currentCtx context.Context
 
 //This should parse the time JSON objects. The examples were all null, so unsure of the format. 
 func (t JSONTime)MarshalJSON(b []byte) (err error) {
     s := string(b)
+    logging.Trace(currentCtx,"JSONTime(String)=%s",s)
     if s == "null" || s == "" {
        t.Time = time.Time{}
        return
     }
-    t.Time, err = time.Parse(jsonTimeLayout, s)
+    tt, err := time.Parse(jsonTimeLayout, s)
+    t = JSONTime{tt}
     return
 }
 
@@ -40,7 +45,10 @@ type Image struct {
 type NextEpisode struct {
 	Channel			int				`json:"channel,omitempty"`
 	ChannelLogo		string			`json:"channelLogo,omitempty"`
-	Date			int				`json:"date,omitempty"`
+	/* Unfortunely Google cloud must be running an older Go version. Testing of the custom date 
+	*  handling "nulls" was fine locally. But failed in the cloud. Chaging to a pointer to time, hopefully that works
+	*/
+	Date			*time.Time		`json:"date,omitempty"`
 	Html			string			`json:"html,omitempty"`
 	Url				string			`json:"url,omitempty"`
 }
@@ -61,8 +69,8 @@ type Payload struct {
 }
 
 
-type Request struct {
-	Payloads 		[]Payload		`json:"payload,omitempty"`
+type Request struct { //Assuming an empty request is not an error
+	Payloads 		[]Payload		`json:"payload,omitempty"` 
 	Skip  			int 			`json:"skip,omitempty"`
 	Take       		int    			`json:"take,omitempty"`
 	TotalRecords 	int 			`json:"totalRecords,omitempty"`
@@ -71,15 +79,16 @@ type Request struct {
 /*
 * ParseRequest: This function will parse the JSON out of the incomming request and return the response struct
 */
-func ParseRequest(r *http.Request) (Request,error){
-	logging.Started("request", "ParseRequest")
+func ParseRequest(ctx context.Context, r *http.Request) (Request,error){
+	currentCtx = ctx
+	logging.Startedf(ctx,"request", "ParseRequest","")
 	var req Request
 	err := json.NewDecoder(r.Body).Decode(&req); 
 	if err != nil {
-		logging.CompletedErrorf(err,"request", "ParseRequest","error encountered decoding request body")
+		logging.CompletedErrorf(ctx,err,"request", "ParseRequest","error encountered decoding request body")
 		return req,err
 	}
-	logging.Completed("request", "ParseRequest")
+	logging.Completed(ctx,"request", "ParseRequest")
 	return req,nil
 }
 
