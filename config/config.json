@@ -1,4 +1,4 @@
 {
-    "LogToCloud": true,
+    "LogToCloud": false,
     "LogToLocal": true
 }

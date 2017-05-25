@@ -54,10 +54,10 @@ func returnCode400(ctx context.Context, w http.ResponseWriter, r *http.Request, 
 	 
 	 errResp := view.ErrorResponse{ ErrorMessage : fmt.Sprintf("Could not decode request: %s", err) }
 	 //On inital testing the other end didnt pick up the replys as JSON
-	 w.Header().Set("Content-Type", "application/json")
 	 w.WriteHeader(http.StatusBadRequest)
 	 //errorMessage, _ := json.Marshal(errResp)
 	 //http.Error(w,string(errorMessage), http.StatusBadRequest)
+	 w.Header().Set("Content-Type", "application/json")
 	 json.NewEncoder(w).Encode(errResp)
 	 logging.Warning(ctx,"Sent 400 response to client, response = %s",errResp)
 		 
