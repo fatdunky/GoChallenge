@@ -42,7 +42,7 @@ func MainHandler(w http.ResponseWriter, r *http.Request) {
    	logging.Info(ctx,"Sending response")
    	 //On inital testing the other end didnt pick up the replys as JSON
    	//message, _ := json.Marshal(resp)
-   	w.Header().Set("content-type", "application/json; charset=utf-8")
+   	w.Header().Set("Content-Type", "application/json")
    	//w.Write(message)
     enc := json.NewEncoder(w)
     enc.Encode(resp)
@@ -56,7 +56,7 @@ func returnCode400(ctx context.Context, w http.ResponseWriter, r *http.Request, 
 	 
 	 errResp := view.ErrorResponse{ ErrorMessage : fmt.Sprintf("Could not decode request: %s", err) }
 	 //On inital testing the other end didnt pick up the replys as JSON
-	 w.Header().Set("content-type", "application/json; charset=utf-8")
+	 w.Header().Set("Content-Type", "application/json")
 	 w.WriteHeader(http.StatusBadRequest)
 	 //errorMessage, _ := json.Marshal(errResp)
 	 //http.Error(w,string(errorMessage), http.StatusBadRequest)
